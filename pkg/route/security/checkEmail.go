@@ -3,10 +3,10 @@ package security
 import (
 	"github.com/gin-gonic/gin"
 	"github.com/spf13/viper"
-	"gopkg.in/ezzarghili/recaptcha-go.v4"
+	//"gopkg.in/ezzarghili/recaptcha-go.v4"
 	"gorm.io/gorm/clause"
-	"log"
-	"net"
+	//"log"
+	//"net"
 	"net/http"
 	"regexp"
 	"strings"
@@ -15,7 +15,7 @@ import (
 	"treehollow-v3-backend/pkg/consts"
 	"treehollow-v3-backend/pkg/logger"
 	"treehollow-v3-backend/pkg/mail"
-	"treehollow-v3-backend/pkg/route/contents"
+	//"treehollow-v3-backend/pkg/route/contents"
 	"treehollow-v3-backend/pkg/utils"
 )
 
