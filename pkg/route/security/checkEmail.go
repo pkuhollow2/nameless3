@@ -105,6 +105,7 @@ func checkEmailRateLimitVerificationCode(c *gin.Context) {
 }
 
 func checkEmailReCaptchaValidationMiddleware(c *gin.Context) {
+	/*
 	recaptchaVersion := c.PostForm("recaptcha_version")
 	recaptchaToken := c.PostForm("recaptcha_token")
 	email := strings.ToLower(c.PostForm("email"))
@@ -159,6 +160,7 @@ func checkEmailReCaptchaValidationMiddleware(c *gin.Context) {
 		c.Abort()
 		return
 	}
+ 	*/
 	c.Next()
 }
 
