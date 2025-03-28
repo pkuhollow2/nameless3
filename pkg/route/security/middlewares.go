@@ -47,6 +47,52 @@ func loginParamsCheckMiddleware(c *gin.Context) {
 	c.Next()
 }
 
+func createAccountParamsCheckMiddleware(c *gin.Context) {
+	pwHashed := c.PostForm("password_hashed")
+	email := strings.ToLower(c.PostForm("email"))
+	deviceTypeStr := c.PostForm("device_type")
+	deviceInfo := c.PostForm("device_info")
+	iosDeviceToken := c.PostForm("ios_device_token")
+	emailHeader := c.PostForm("email_header")
+
+	if len(email) > 100 || len(pwHashed) > 64 || len(deviceInfo) > 100 || len(iosDeviceToken) > 100 {
+		base.HttpReturnWithCodeMinusOneAndAbort(c, logger.NewSimpleError("LoginParamsOutOfBound", "参数错误", logger.WARN))
+		return
+	}
+	if len(emailHeader) > 10000 {
+        base.HttpReturnWithCodeMinusOneAndAbort(c, logger.NewSimpleError("EmailHeaderTooLong", "信头内容过长，或许换一封试试？", logger.WARN))
+        return
+    }
+	deviceTypeInt, err := strconv.Atoi(deviceTypeStr)
+	deviceType := base.DeviceType(deviceTypeInt)
+	if err != nil || (deviceType != base.AndroidDevice &&
+		deviceType != base.IOSDevice &&
+		deviceType != base.WebDevice) {
+		base.HttpReturnWithCodeMinusOneAndAbort(c, logger.NewSimpleError("DeviceTypeError", "参数device_type错误", logger.WARN))
+		return
+	}
+
+	c.Set("device_type", deviceType)
+	c.Next()
+}
+
+func deleteAccountParamsCheckMiddleware(c *gin.Context) {
+	email := strings.ToLower(c.PostForm("email"))
+	nonce := c.PostForm("nonce")
+	emailHeader := c.PostForm("valid_code")
+
+	if len(email) > 100 || len(nonce) > 50 {
+		base.HttpReturnWithCodeMinusOneAndAbort(c, logger.NewSimpleError("LoginParamsOutOfBound", "参数错误", logger.WARN))
+		return
+	}
+	if len(emailHeader) > 10000 {
+        base.HttpReturnWithCodeMinusOneAndAbort(c, logger.NewSimpleError("EmailHeaderTooLong", "信头内容过长，或许换一封试试？", logger.WARN))
+        return
+    }
+	c.Next()
+}
+
+
 func checkAccountNotRegistered(c *gin.Context) {
 	email := strings.ToLower(c.PostForm("email"))
 	emailHash := utils.HashEmail(email)

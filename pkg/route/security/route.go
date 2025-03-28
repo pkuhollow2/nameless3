@@ -44,7 +44,8 @@ func ApiListenHttp() {
 		checkEmailReCaptchaValidationMiddleware,
 		unregisterEmail)
 	r.POST("/v3/security/login/create_account",
-		loginParamsCheckMiddleware,
+		createAccountParamsCheckMiddleware,
+		checkEmailRegexMiddleware,
 		checkAccountNotRegistered,
 		loginCheckIOSToken,
 		createAccount)
@@ -59,6 +60,7 @@ func ApiListenHttp() {
 		checkAccountIsRegistered,
 		changePassword)
 	r.POST("/v3/security/login/unregister",
+		deleteAccountParamsCheckMiddleware,
 		checkAccountIsRegistered,
 		deleteAccount)
 	r.GET("/v3/security/devices/list", listDevices)

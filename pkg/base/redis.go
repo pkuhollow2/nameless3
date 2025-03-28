@@ -1,7 +1,7 @@
 package base
 
 import (
-	libredis "github.com/go-redis/redis/v8"
+	libredis "github.com/redis/go-redis/v9"
 	"github.com/spf13/viper"
 	"github.com/ulule/limiter/v3"
 	sredis "github.com/ulule/limiter/v3/drivers/store/redis"

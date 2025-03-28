@@ -22,6 +22,7 @@ const ReportMaxLength = 1000
 const ImgMaxLength = 2000000
 const Base64Rate = 1.33333333
 const AesIv = "12345678901234567890123456789012"
+const PostTimeShiftStdDev = 120.0
 
 const PushApiLogFile = "push.log"
 const ServicesApiLogFile = "services-api.log"
@@ -72,21 +73,21 @@ var Names1 = []string{
 	"Bob",
 	"Carol",
 	"Dave",
-	"Eve",
+	"Emilia",
 	"Francis",
 	"Grace",
 	"Hans",
 	"Isabella",
 	"Jason",
 	"Kate",
-	"Louis",
+	"Lewes",
 	"Margaret",
 	"Nathan",
 	"Olivia",
-	"Paul",
+	"Puck",
 	"Queen",
-	"Richard",
-	"Susan",
+	"Roswaal",
+	"Satella",
 	"Thomas",
 	"Uma",
 	"Vivian",

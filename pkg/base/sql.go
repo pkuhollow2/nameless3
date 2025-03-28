@@ -178,8 +178,21 @@ func GetVerificationCode(emailHash string) (string, int64, int, error) {
 }
 
 func SavePost(uid int32, text string, tag string, typ string, filePath string, metaStr string, voteData string) (id int32, err error) {
-	post := Post{Tag: tag, UserID: uid, Text: text, Type: typ, FilePath: filePath, LikeNum: 0, ReplyNum: 0,
-		ReportNum: 0, FileMetadata: metaStr, VoteData: voteData}
+	postTime := utils.GetShiftedTimeStamp()
+
+	post := Post{
+		Tag:          tag,
+		UserID:       uid,
+		Text:         text,
+		Type:         typ,
+		FilePath:     filePath,
+		LikeNum:      0,
+		ReplyNum:     0,
+		ReportNum:    0,
+		FileMetadata: metaStr,
+		VoteData:     voteData,
+		CreatedAt:    postTime, // 使用随机偏移后的时间戳
+	}
 	err = db.Save(&post).Error
 	id = post.ID
 	return
@@ -194,8 +207,10 @@ func GetHotPosts() (posts []Post, err error) {
 
 func SaveComment(tx *gorm.DB, uid int32, text string, tag string, typ string, filePath string, pid int32, replyTo int32, name string,
 	metaStr string) (id int32, err error) {
+	postTime := utils.GetShiftedTimeStamp()
+
 	comment := Comment{Tag: tag, UserID: uid, PostID: pid, ReplyTo: replyTo, Text: text, Type: typ, FilePath: filePath,
-		Name: name, FileMetadata: metaStr}
+		Name: name, FileMetadata: metaStr, CreatedAt: postTime,}
 	err = tx.Save(&comment).Error
 	id = comment.ID
 	if err == nil {

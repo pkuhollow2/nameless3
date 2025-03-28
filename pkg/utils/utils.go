@@ -1,6 +1,9 @@
 package utils
 
 import (
+	"encoding/binary"
+	"math"
+
 	"bytes"
 	"crypto/rand"
 	"crypto/sha256"
@@ -35,6 +38,25 @@ import (
 
 var AllowedSubnets []*net.IPNet
 var Salt string
+
+func SecureRandomFloat64() float64 {
+	var b [8]byte
+	_, err := rand.Read(b[:]) // 使用加密安全的随机数
+	if err != nil {
+		panic(err)
+	}
+	return float64(binary.LittleEndian.Uint64(b[:])) / (1 << 64) // 归一化到 0-1
+}
+
+func GetShiftedTimeStamp() time.Time {
+	stdDev := consts.PostTimeShiftStdDev // stdDev 秒标准差
+	// 使用安全随机数生成正态分布偏移
+	z := math.Sqrt(-2.0*math.Log(SecureRandomFloat64())) * math.Cos(2.0*math.Pi*SecureRandomFloat64()) // Box-Muller 变换，用于生成符合标准正态分布的随机数
+	offset := time.Duration(z*stdDev) * time.Second
+	// 计算最终时间戳
+	postTime := time.Now().Add(offset)
+	return postTime
+}
 
 func GenCode() string {
 	nBig, err := rand.Int(rand.Reader, big.NewInt(1000000))

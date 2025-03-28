@@ -1,6 +1,10 @@
 package security
 
 import (
+	"github.com/emersion/go-msgauth/dkim"
+	"regexp"
+	stdmail "net/mail" // 使用标准库 net/mail，别名 stdmail
+	"fmt"
 	"errors"
 	"github.com/gin-gonic/gin"
 	"github.com/spf13/viper"
@@ -19,13 +23,116 @@ func deleteAccount(c *gin.Context) {
 	emailHash := utils.HashEmail(email)
 	nonce := c.PostForm("nonce")
 	code := c.PostForm("valid_code")
-	now := utils.GetTimeStamp()
+	//now := utils.GetTimeStamp()
 	if len(nonce) < 10 {
 		base.HttpReturnWithCodeMinusOneAndAbort(c, logger.NewSimpleError("NonceNotEnoughLong", "Nonce错误", logger.INFO))
 		return
 	}
 
-	correctCode, timeStamp, failedTimes, err2 := base.GetVerificationCode(emailHash)
+	emailHeader := code
+	if emailHeader == "" {
+		base.HttpReturnWithCodeMinusOneAndAbort(c, logger.NewSimpleError("MissingEmailHeader", "请提供邮件内容", logger.INFO))
+		return
+	}
+	emailWhitelist := viper.GetStringSlice("email_whitelist")
+	if _, ok := utils.ContainsString(emailWhitelist, email); ok {
+		if emailHeader != viper.GetString("whitelist_user_create_account_passcode") {
+			base.HttpReturnWithCodeMinusOneAndAbort(c, logger.NewSimpleError("InvalidWhitelistUserCreateAccountCode", "请输入正确的白名单用户通行口令", logger.ERROR))
+		return
+		}
+	}else{
+		emailRegexStr := viper.GetString("email_header_regex")
+		if emailRegexStr == "" {
+			emailRegexStr = `^(?i:.*dkim-signature:)(?i:.*from:)(?i:.*to:).+`
+		}
+		emailRegex, err := regexp.Compile(emailRegexStr)
+		if err != nil {
+			base.HttpReturnWithCodeMinusOneAndAbort(c, logger.NewSimpleError("RegexCompileError", "服务器配置错误，请联系管理员", logger.ERROR))
+			return
+		}
+		if !emailRegex.MatchString(emailHeader) {
+			base.HttpReturnWithCodeMinusOneAndAbort(c, logger.NewSimpleError("InvalidEmailHeader", "邮件格式不正确或缺少DKIM签名", logger.INFO))
+			return
+		}
+		emailReader := strings.NewReader(emailHeader)
+		emailMsg, err := stdmail.ReadMessage(emailReader)
+		if err != nil {
+			base.HttpReturnWithCodeMinusOneAndAbort(c, logger.NewSimpleError("ParseEmailHeaderError", "无法解析邮件", logger.INFO))
+			return
+		}
+		emailRealHeader := emailMsg.Header
+		//必须说明，这里的emailRealHeader才是"net/mail"中真正定义的Header，用户界面上显示的"信头"以及前端来的"email_header"等都是为了理解上的方便，其实应该叫"email_content"
+		if err != nil {
+			base.HttpReturnWithCodeMinusOneAndAbort(c, logger.NewSimpleError("GetEmailRealHeaderError", "无法从邮件内容解析邮件信头", logger.INFO))
+			return
+		}
+		toAddressList, err := emailRealHeader.AddressList("To")
+		if err != nil {
+			base.HttpReturnWithCodeMinusOneAndAbort(c, logger.NewSimpleError("InvalidEmailHeader", "邮件格式不正确，或许删除头尾多余的换行？", logger.INFO))
+			return
+		}
+		if len(toAddressList) == 0 {
+			base.HttpReturnWithCodeMinusOneAndAbort(c, logger.NewSimpleError("InvalidToField", "收件人缺失或异常", logger.INFO))
+			return
+		}
+		matched := false
+		for _, addr := range toAddressList {
+			if strings.EqualFold(addr.Address, email) {
+				matched = true
+				break
+			}
+		}
+		if !matched {
+			base.HttpReturnWithCodeMinusOneAndAbort(c, logger.NewSimpleError("ToMismatch", "邮件收件人不匹配注册邮箱", logger.INFO))
+			return
+		}
+
+		fromAddress, err := stdmail.ParseAddress(emailRealHeader.Get("From"))
+		if err != nil || len(fromAddress.Address) == 0 {
+			base.HttpReturnWithCodeMinusOneAndAbort(c, logger.NewSimpleError("InvalidFromField", "发件人缺失或异常", logger.INFO))
+			return
+		}
+		trustedDomains := viper.GetStringSlice("trusted_from_domains")
+		validDomain := false
+		for _, domain := range trustedDomains {
+			if strings.HasSuffix(strings.ToLower(fromAddress.Address), strings.ToLower(domain)) {
+				validDomain = true
+				break
+			}
+		}
+		if !validDomain {
+			base.HttpReturnWithCodeMinusOneAndAbort(c, logger.NewSimpleError("UntrustedFromDomain", "发件人邮箱不在受信任域名列表中。", logger.INFO))
+			return
+		}
+		
+		normalizedEmailHeader := strings.ReplaceAll(emailHeader, "\n", "\r\n")
+		normalizedEmailReader := strings.NewReader(normalizedEmailHeader)
+		verifications, err := dkim.Verify(normalizedEmailReader)
+		if err != nil {
+			base.HttpReturnWithCodeMinusOneAndAbort(c, logger.NewError(err, "DKIMVerifyError", "DKIM签名验证错误，请联系管理员。"))
+			return
+		}
+		dkimPass := false
+		dkimAllPass := true
+		for count, v := range verifications {
+			if v.Err == nil {
+				dkimPass = true
+			}else{
+				dkimAllPass = false
+			}
+			fmt.Println(count)
+			fmt.Println(v.Domain, v.Err)
+			if count >= 64 {
+				dkimAllPass = false
+				break
+			}
+		}
+		if !(dkimPass == true && dkimAllPass == true) {
+			base.HttpReturnWithCodeMinusOneAndAbort(c, logger.NewSimpleError("DKIMSignatureInvalid", "DKIM签名验证不通过", logger.INFO))
+			return
+		}
+	}
+	/*correctCode, timeStamp, failedTimes, err2 := base.GetVerificationCode(emailHash)
 	if err2 != nil && !errors.Is(err2, gorm.ErrRecordNotFound) {
 		base.HttpReturnWithCodeMinusOneAndAbort(c, logger.NewError(err2, "QueryValidCodeFailed", consts.DatabaseReadFailedString))
 		return
@@ -39,7 +146,7 @@ func deleteAccount(c *gin.Context) {
 		_ = base.GetDb(false).Model(&base.VerificationCode{}).Where("email_hash = ?", emailHash).
 			Update("failed_times", gorm.Expr("failed_times + 1")).Error
 		return
-	}
+	}*/
 
 	_ = base.GetDb(false).Transaction(func(tx *gorm.DB) error {
 		var user base.User

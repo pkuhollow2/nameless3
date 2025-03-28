@@ -2,7 +2,7 @@ package base
 
 import (
 	"context"
-	"github.com/go-redis/cache/v8"
+	"github.com/go-redis/cache/v9"
 	"gorm.io/gorm"
 	"log"
 	"strconv"

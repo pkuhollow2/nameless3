@@ -4,17 +4,17 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/spf13/viper"
 	//"gopkg.in/ezzarghili/recaptcha-go.v4"
-	"gorm.io/gorm/clause"
+	//"gorm.io/gorm/clause"
 	//"log"
 	//"net"
 	"net/http"
 	"regexp"
 	"strings"
-	"time"
+	//"time"
 	"treehollow-v3-backend/pkg/base"
 	"treehollow-v3-backend/pkg/consts"
 	"treehollow-v3-backend/pkg/logger"
-	"treehollow-v3-backend/pkg/mail"
+	//"treehollow-v3-backend/pkg/mail"
 	//"treehollow-v3-backend/pkg/route/contents"
 	"treehollow-v3-backend/pkg/utils"
 )
@@ -93,6 +93,7 @@ func checkEmailIsOldTreeholeUserMiddleware(c *gin.Context) {
 }
 
 func checkEmailRateLimitVerificationCode(c *gin.Context) {
+	/*
 	emailHash := c.MustGet("email_hash").(string)
 
 	now := utils.GetTimeStamp()
@@ -100,7 +101,7 @@ func checkEmailRateLimitVerificationCode(c *gin.Context) {
 	if now-timeStamp < 60 {
 		base.HttpReturnWithCodeMinusOneAndAbort(c, logger.NewSimpleError("TooMuchEmailInOneMinute", "请不要短时间内重复发送邮件。", logger.INFO))
 		return
-	}
+	}*/
 	c.Next()
 }
 
@@ -165,12 +166,13 @@ func checkEmailReCaptchaValidationMiddleware(c *gin.Context) {
 }
 
 func checkEmail(c *gin.Context) {
-	email := strings.ToLower(c.PostForm("email"))
+	//email := strings.ToLower(c.PostForm("email"))
 
-	emailHash := c.MustGet("email_hash").(string)
+	//emailHash := c.MustGet("email_hash").(string)
 
-	code := utils.GenCode()
+	//code := utils.GenCode()
 
+	/*
 	err := mail.SendValidationEmail(code, email)
 	if err != nil {
 		base.HttpReturnWithCodeMinusOne(c, logger.NewError(err, "SendEmailFailed"+email, "验证码邮件发送失败。"))
@@ -184,15 +186,19 @@ func checkEmail(c *gin.Context) {
 		base.HttpReturnWithCodeMinusOne(c, logger.NewError(err, "SaveVerificationCodeFailed", consts.DatabaseWriteFailedString))
 		return
 	}
-
 	c.JSON(http.StatusOK, gin.H{
 		"code": 1,
 		"msg":  "验证码发送成功，5分钟内无法重复发送验证码。请记得查看垃圾邮件。",
 	})
+	*/
+	c.JSON(http.StatusOK, gin.H{
+		"code": 1,
+		"msg":  "进入注册流程。",
+	})
 }
 
 func unregisterEmail(c *gin.Context) {
-	email := strings.ToLower(c.PostForm("email"))
+	/*email := strings.ToLower(c.PostForm("email"))
 
 	emailHash := c.MustGet("email_hash").(string)
 
@@ -215,5 +221,10 @@ func unregisterEmail(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"code": 1,
 		"msg":  "验证码发送成功，5分钟内无法重复发送验证码。请记得查看垃圾邮件。",
+	})*/
+
+	c.JSON(http.StatusOK, gin.H{
+		"code": 1,
+		"msg":  "进入注销流程。",
 	})
 }
